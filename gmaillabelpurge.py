@@ -94,9 +94,20 @@ def purge(verbose=False):
         
         # get all messages
         typ, data = server.search(None, 'ALL')
-        # now go through messages
+        
+        # get the UIDs so we can properly delete more than one
+        messages=[]
         for message in data[0].split():
-            status, data = server.fetch(message, "(UID BODY[HEADER.FIELDS (SUBJECT FROM DATE)])")
+            status, data = server.fetch(message, "UID")
+            for msg in data:
+                # we just want the real UID so we throw away the rest
+                messages.append(msg[msg.index("UID")+4:-1])
+        
+        # now go through messages
+        for message in messages:
+            if verbose:
+                print("Loading message %s" % message)
+            status, data = server.uid("fetch",message, "(UID BODY[HEADER.FIELDS (SUBJECT FROM DATE)])")
             headers={}
             for header in data[0][1].split("\n"):
                 try:
@@ -119,11 +130,11 @@ def purge(verbose=False):
                 print("Deleting '%s' from '%s'" % (headers['subject'],headers['from'])) 
                 try:
                     #copy the mail to the trash
-                    server.copy(message,"[Google Mail]/Trash")
+                    server.uid("copy",message,"[Google Mail]/Trash")
                     #mark the original mail deleted
-                    typ, response = c.store(message, '+FLAGS', r'(\Deleted)')
-                except:
-                    print("There was a problem deleting '%s' from '%s'" % (headers['subject'],headers['from']))        
+                    typ, response = server.uid("store",message, '+FLAGS', r'(\Deleted)')
+                except Exception, e:
+                    print("There was a problem deleting '%s' from '%s' (%s)" % (headers['subject'],headers['from'],repr(e)))        
             
             else:
                 if verbose:
