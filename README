@@ -1,0 +1,20 @@
+gmaillabelpurge.py allows you to delete all messages from given gmail labels when they reach a certain age.
+
+It uses gmail's IMAP interface so you'll have to setup IMAP for your account, apart from that it just needs Python and the Python standard library.
+
+HOW TO USE:
+
+Open the file ~/.gmaillabelpurge with your favourite text editor. Take this example as a template for what to put in:
+
+username=myuser@gmail.com
+password=MYPASSWORD
+maxage=30
+labels=LABEL1,LABEL2
+
+After "username" put your gmail user, after "password" your password (no surprises there).
+maxage is the maximum age (in days) for a mail in order for in to be kept around (as in not moved to gmail trash). Just enter something integer-y cause I don't really do anything smart here.
+Finally labels is a comma-delimited list of the labels you want purged.
+
+If anything breaks or you find bugs contact me:
+Mail: <tante@the-gay-bar.com>
+jabber: tante@jabber.org
