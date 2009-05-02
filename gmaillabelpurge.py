@@ -10,7 +10,7 @@ import imaplib
 import os.path
 import email.utils
 import datetime
-import time
+from optparse import OptionParser
 
 CONFIGFILE="~/.gmaillabelpurge"
 """The filename and path of the config file, default is ~/.gmailpurge"""
@@ -76,39 +76,72 @@ def purge(verbose=False):
         server.login(_config['username'],_config['password'])
     except:
         raise SystemExit("Couldn't connect to Gmail server, is the name/password combination correct?")
-    try:
-        status, count = server.select("testlabel")
-    except:
-        raise SystemExit("The given label doesn't seem to exist.")
     
-    # mark the current date so we can compare the mail ages
-    now = datetime.datetime.now()
-    if verbose:
-        print("Current time: %s" % now.isoformat())
-
-    status, data = server.fetch(count[0], "(UID BODY[HEADER.FIELDS (SUBJECT FROM DATE)])")
-    headers={}
-    for header in data[0][1].split("\n"):
+    # go through the labels
+    for label in _config['labels']:
+        if verbose:
+            print("Checking label '%s'" % label)
+    
         try:
-            name,value = header.strip().split(":",1)
-            headers[name.strip().lower()] = value.strip()
+            status, count = server.select(label)
         except:
-            # we just don't care what went wrong here
-            pass
-    #copy the mail to the trash
-   # server.copy(count[0],"[Google Mail]/Trash") 
-
-    datetuple = list(email.utils.parsedate(headers['date']))
-    
-    # delete timezoneoffsets, might have to deal with that later
-    del datetuple[7]
-    del datetuple[7]
-    maildate = datetime.datetime(*datetuple)
-    delta=now-maildate
-    
+            raise SystemExit("The given label ('%s') doesn't seem to exist." % label)
+        
+        # mark the current date so we can compare the mail ages
+        now = datetime.datetime.now()
+        if verbose:
+            print("Current time: %s" % now.isoformat())
+        
+        # get all messages
+        typ, data = server.search(None, 'ALL')
+        # now go through messages
+        for message in data[0].split():
+            status, data = server.fetch(message, "(UID BODY[HEADER.FIELDS (SUBJECT FROM DATE)])")
+            headers={}
+            for header in data[0][1].split("\n"):
+                try:
+                    name,value = header.strip().split(":",1)
+                    headers[name.strip().lower()] = value.strip()
+                except:
+                    # we just don't care what went wrong here
+                    pass
+        
+            datetuple = list(email.utils.parsedate(headers['date']))
+            # delete timezoneoffsets, might have to deal with that later
+            del datetuple[7]
+            del datetuple[7]
+            
+            maildate = datetime.datetime(*datetuple)
+            delta=now-maildate
+            
+            #check whether we wanna delete the mail
+            if delta.days>_config['maxage']:
+                print("Deleting '%s' from '%s'" % (headers['subject'],headers['from'])) 
+                try:
+                    #copy the mail to the trash
+                    server.copy(message,"[Google Mail]/Trash")
+                    #mark the original mail deleted
+                    typ, response = c.store(message, '+FLAGS', r'(\Deleted)')
+                except:
+                    print("There was a problem deleting '%s' from '%s'" % (headers['subject'],headers['from']))        
+            
+            else:
+                if verbose:
+                    print("Not Deleting '%s' from '%s'" % (headers['subject'],headers['from'])) 
+        
     # close the connection
     server.close()
     server.logout()
 
-readConf()
-purge(True)
+if __name__=="__main__":
+    parser = OptionParser()
+    parser.add_option("-v", "--verbose",
+                  action="store_true", dest="verbose", default=False,
+                  help="print extra status messages to stdout")
+    (options,args) = parser.parse_args()
+    
+    # read configuration
+    readConf()
+    
+    # run purge()
+    purge(options.verbose)
