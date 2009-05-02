@@ -69,13 +69,19 @@ labels=LABEL1,LABEL2
     except:
         raise SystemExit("Please set labels to be purged")
 
-def purge(verbose=False):
+def purge(verbose=False,pretend=False):
     global _config
     server=imaplib.IMAP4_SSL("imap.gmail.com", 993)
     try:
         server.login(_config['username'],_config['password'])
     except:
         raise SystemExit("Couldn't connect to Gmail server, is the name/password combination correct?")
+        
+    # mark the current date so we can compare the mail ages
+    now = datetime.datetime.now()
+    if verbose:
+        print("Current time: %s" % now.isoformat())
+        
     
     # go through the labels
     for label in _config['labels']:
@@ -87,13 +93,8 @@ def purge(verbose=False):
         except:
             raise SystemExit("The given label ('%s') doesn't seem to exist." % label)
         
-        # mark the current date so we can compare the mail ages
-        now = datetime.datetime.now()
-        if verbose:
-            print("Current time: %s" % now.isoformat())
-        
         # get all messages
-        typ, data = server.search(None, 'ALL')
+        status, data = server.search(None, 'ALL')
         
         # get the UIDs so we can properly delete more than one
         messages=[]
@@ -127,20 +128,24 @@ def purge(verbose=False):
             
             #check whether we wanna delete the mail
             if delta.days>_config['maxage']:
-                print("Deleting '%s' from '%s'" % (headers['subject'],headers['from'])) 
-                try:
-                    #copy the mail to the trash
-                    server.uid("copy",message,"[Google Mail]/Trash")
-                    #mark the original mail deleted
-                    typ, response = server.uid("store",message, '+FLAGS', r'(\Deleted)')
-                except Exception, e:
-                    print("There was a problem deleting '%s' from '%s' (%s)" % (headers['subject'],headers['from'],repr(e)))        
+                if pretend:
+                    print("I would delete '%s' from '%s'" % (headers['subject'],headers['from'])) 
+
+                else:
+                    print("Deleting '%s' from '%s'" % (headers['subject'],headers['from'])) 
+                    try:
+                        #copy the mail to the trash
+                        server.uid("copy",message,"[Google Mail]/Trash")
+                        #mark the original mail deleted
+                        typ, response = server.uid("store",message, '+FLAGS', r'(\Deleted)')
+                    except Exception, e:
+                        print("There was a problem deleting '%s' from '%s' (%s)" % (headers['subject'],headers['from'],repr(e)))        
             
             else:
                 if verbose:
                     print("Not Deleting '%s' from '%s'" % (headers['subject'],headers['from'])) 
         
-    # close the connection
+    # close the connection to the server
     server.close()
     server.logout()
 
@@ -149,10 +154,13 @@ if __name__=="__main__":
     parser.add_option("-v", "--verbose",
                   action="store_true", dest="verbose", default=False,
                   help="print extra status messages to stdout")
+    parser.add_option("-p", "--pretend",
+                  action="store_true", dest="pretend", default=False,
+                  help="just do a dry run and don't actually delete or move messages")
     (options,args) = parser.parse_args()
     
     # read configuration
     readConf()
     
     # run purge()
-    purge(options.verbose)
+    purge(options.verbose,options.pretend)
