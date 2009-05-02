@@ -12,8 +12,10 @@ maxage=30
 labels=LABEL1,LABEL2
 
 After "username" put your gmail user, after "password" your password (no surprises there).
-maxage is the maximum age (in days) for a mail in order for in to be kept around (as in not moved to gmail trash). Just enter something integer-y cause I don't really do anything smart here.
+maxage is the maximum age (in days) for a mail in order for in to be kept around (as in not moved to gmail trash). Just enter something integer-y cause I don't really do anything smart here. If you enter "-1" it will move all your mails in the given label to the trash.
 Finally labels is a comma-delimited list of the labels you want purged.
+
+To run the program just run 'gmaillabelpurge.py' (if it's executable) or 'python gmaillabelpurge.py'. You can get a verbose run by appending '-v' or '--verbose'. '-h' gives help.
 
 If anything breaks or you find bugs contact me:
 Mail: <tante@the-gay-bar.com>
