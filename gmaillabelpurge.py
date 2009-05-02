@@ -1,6 +1,11 @@
 #!/usr/bin/env python
+# -*- coding: utf8 -*-
 
-import ConfigParser
+# gmaillabelpurge
+# Jürgen Geuter <tante@the-gay-bar.com>
+# 2009
+# Licensed under GPL-3
+
 import imaplib
 import os.path
 
