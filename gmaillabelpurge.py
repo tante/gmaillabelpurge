@@ -70,6 +70,9 @@ labels=LABEL1,LABEL2
         raise SystemExit("Please set labels to be purged")
 
 def purge(verbose=False,pretend=False):
+    """Purge the labels given in the config file."""
+    
+    readConf()
     global _config
     server=imaplib.IMAP4_SSL("imap.gmail.com", 993)
     try:
@@ -158,9 +161,6 @@ if __name__=="__main__":
                   action="store_true", dest="pretend", default=False,
                   help="just do a dry run and don't actually delete or move messages")
     (options,args) = parser.parse_args()
-    
-    # read configuration
-    readConf()
     
     # run purge()
     purge(options.verbose,options.pretend)
