@@ -92,8 +92,8 @@ def purge(verbose=False,pretend=False):
     now = datetime.datetime.now()
     if verbose:
         print("Current time: %s" % now.isoformat())
-        
-    
+        print("Will use the Foldername [%s]" % _config['folder'])
+
     # go through the labels
     for label in _config['labels']:
         if verbose:
