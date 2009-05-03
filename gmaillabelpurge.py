@@ -69,11 +69,19 @@ labels=LABEL1,LABEL2
     except:
         raise SystemExit("Please set labels to be purged")
 
+    # now we set the gmail folder
+    # German accounts call it [Google Mail], International ones [Gmail]
+    if("googlemail.com" in _config['username'].lower()):
+        _config['folder'] = "Google Mail"
+    else:
+        _config['folder'] = "Gmail"
+
 def purge(verbose=False,pretend=False):
     """Purge the labels given in the config file."""
     
     readConf()
     global _config
+    
     server=imaplib.IMAP4_SSL("imap.gmail.com", 993)
     try:
         server.login(_config['username'],_config['password'])
@@ -138,7 +146,7 @@ def purge(verbose=False,pretend=False):
                     print("Deleting '%s' from '%s'" % (headers['subject'],headers['from'])) 
                     try:
                         #copy the mail to the trash
-                        server.uid("copy",message,"[Google Mail]/Trash")
+                        server.uid("copy",message,"[%s]/Trash" % _config['folder'])
                         #mark the original mail deleted
                         typ, response = server.uid("store",message, '+FLAGS', r'(\Deleted)')
                     except Exception, e:
