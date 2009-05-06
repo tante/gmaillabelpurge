@@ -149,6 +149,7 @@ def purge(verbose=False,pretend=False):
                         server.uid("copy",message,"[%s]/Trash" % _config['folder'])
                         #mark the original mail deleted
                         typ, response = server.uid("store",message, '+FLAGS', r'(\Deleted)')
+                        server.expunge()
                     except Exception, e:
                         print("There was a problem deleting '%s' from '%s' (%s)" % (headers['subject'],headers['from'],repr(e)))        
             
