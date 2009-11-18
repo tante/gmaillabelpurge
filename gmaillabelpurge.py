@@ -32,6 +32,7 @@ def readConf():
         raise SystemExit("""Please set up the configuration in %s
 Example:
 
+[DEFAULT]
 username=myuser@gmail.com
 password=MYPASSWORD
 [set1]
