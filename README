@@ -6,13 +6,18 @@ HOW TO USE:
 
 Open the file ~/.gmaillabelpurge with your favourite text editor. Take this example as a template for what to put in:
 
+[DEFAULT]
 username=myuser@gmail.com
 password=MYPASSWORD
+[30days]
 maxage=30
 labels=LABEL1,LABEL2
+[aaaa]
+maxage=15
+labels=LABEL3,LABEL4
 
-After "username" put your gmail user, after "password" your password (no surprises there).
-maxage is the maximum age (in days) for a mail in order for in to be kept around (as in not moved to gmail trash). Just enter something integer-y cause I don't really do anything smart here. If you enter "-1" it will move all your mails in the given label to the trash.
+The section DEFAULT (has to exist!) contains "username" (put your gmail username here) and "password" (your password [no surprises there]).
+Now you can add as many [sections] as you want, calling them however you want. For each section, maxage is the maximum age (in days) for a mail in order for in to be kept around (as in not moved to gmail trash). Just enter something integer-y cause I don't really do anything smart here. If you enter "-1" it will move all your mails in the given label to the trash.
 Finally labels is a comma-delimited list of the labels you want purged.
 
 To run the program just run 'gmaillabelpurge.py' (if it's executable) or 'python gmaillabelpurge.py'. You can get a verbose run by appending '-v' or '--verbose'. To test the system before it breaks stuff use the '--pretend' (-p) option. '-h' gives help.
