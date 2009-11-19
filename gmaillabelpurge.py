@@ -65,7 +65,7 @@ labels=LABEL4,LABEL5
         sectconf = {}
         sectconf['name']   = section
         try:
-            sectconf['labels'] = map(string.strip,config.get(section,"labels").split())
+            sectconf['labels'] = map(string.strip,config.get(section,"labels").split(","))
         except:
             raise SystemExit("No labels defined for section %s" % section)
         try:
