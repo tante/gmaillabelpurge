@@ -69,7 +69,7 @@ labels=LABEL4,LABEL5
         except:
             raise SystemExit("No labels defined for section %s" % section)
         try:
-            sectconf['maxage'] = config.get(section,"maxage")
+            sectconf['maxage'] = config.getint(section,"maxage")
         except:
             raise SystemExit("No maxage defined for section %s" % section)
         _config['sections'].append(sectconf)
@@ -112,7 +112,7 @@ def purge(verbose=False,pretend=False):
                 status, data = server.search(None, 'ALL')
             # might be too generic but gmail seems to allow select-ing unexisting labels
             except:
-                print("The given label ('%s') doesn't seem to exist, there were at least problems with it." % label)
+                print("The given label ('%s') doesn't seem to exist, there were at least problems with it. (Status: %s)" % (label,status))
                 # break out of this iteration cause the label doesn't exist
                 break
             
@@ -147,7 +147,7 @@ def purge(verbose=False,pretend=False):
                 delta=now-maildate
              
                 #check whether we wanna delete the mail
-                if delta.days>int(section['maxage']):
+                if delta.days>section['maxage']:
                     if pretend:
                         print("I would delete '%s' from '%s'" % (headers['subject'],headers['from'])) 
 
