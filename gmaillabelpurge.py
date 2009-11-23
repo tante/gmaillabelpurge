@@ -147,7 +147,7 @@ def purge(verbose=False,pretend=False):
                 delta=now-maildate
              
                 #check whether we wanna delete the mail
-                if delta.days>section['maxage']:
+                if delta.days>int(section['maxage']):
                     if pretend:
                         print("I would delete '%s' from '%s'" % (headers['subject'],headers['from'])) 
 
@@ -168,8 +168,12 @@ def purge(verbose=False,pretend=False):
                         print("Not Deleting '%s' from '%s'" % (headers['subject'],headers['from'])) 
         
     # close the connection to the server
-    server.close()
-    server.logout()
+    try:
+        server.close()
+        server.logout()
+    except:
+        # we just do not care enough
+        pass
 
 if __name__=="__main__":
     parser = OptionParser()
