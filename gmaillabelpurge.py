@@ -94,10 +94,14 @@ def purge(verbose=False,pretend=False):
 
     # iterate over the sections
     for section in _config['sections']:
+        if verbose:
+            print("Doing section [%s]" % section)
+            print("Maxage for this section: %s days." % section['maxage'])
         # go through the labels
         for label in section['labels']:
             if verbose:
                 print("Checking label '%s'" % label)
+                print
             try:
                 status, count = server.select(label)
             except:
@@ -108,7 +112,9 @@ def purge(verbose=False,pretend=False):
                 status, data = server.search(None, 'ALL')
             # might be too generic but gmail seems to allow select-ing unexisting labels
             except:
-                raise SystemExit("The given label ('%s') doesn't seem to exist, there were at least problems with it." % label)
+                print("The given label ('%s') doesn't seem to exist, there were at least problems with it." % label)
+                # break out of this iteration cause the label doesn't exist
+                break
             
             # get the UIDs so we can properly delete more than one
             messages=[]
