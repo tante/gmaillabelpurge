@@ -85,12 +85,25 @@ def purge(verbose=False,pretend=False):
         server.login(_config['username'],_config['password'])
     except:
         raise SystemExit("Couldn't connect to Gmail server, is the name/password combination correct?")
+
+    # now find out how the TRASH is called
+    # it's usually "Trash" but with a EN/GB Locale it seems to be "Bin"
+    # we just try to select the /Bin Folder and if it doesn't exist
+    # use the /Trash option as default
+    _config['trashfolder'] = "Trash"
+    try:
+        status, count = server.select("[%s]/Bin" % _config['folder'])
+        if status!="NO":
+            _config['trashfolder'] = "Bin"
+    except:
+        pass
         
     # mark the current date so we can compare the mail ages
     now = datetime.datetime.now()
     if verbose:
         print("Current time: %s" % now.isoformat())
         print("Will use the Foldername [%s]" % _config['folder'])
+        print("The Trash is in [%s]/%s ." % (_config['folder'], _config['trashfolder']))
 
     # iterate over the sections
     for section in _config['sections']:
