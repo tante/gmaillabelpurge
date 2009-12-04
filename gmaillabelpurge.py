@@ -168,7 +168,7 @@ def purge(verbose=False,pretend=False):
                         print("Deleting '%s' from '%s'" % (headers['subject'],headers['from'])) 
                         try:
                             #copy the mail to the trash
-                            server.uid("copy",message,"[%s]/Trash" % _config['folder'])
+                            server.uid("copy",message,"[%s]/%s" % (_config['folder'],_config['trashfolder']))
                             #mark the original mail deleted
                             typ, response = server.uid("store",message, '+FLAGS', r'(\Deleted)')
                             #call expunge in order to really delete the messages marked
