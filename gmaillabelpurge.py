@@ -86,6 +86,20 @@ def purge(verbose=False,pretend=False):
     except:
         raise SystemExit("Couldn't connect to Gmail server, is the name/password combination correct?")
 
+    # Seems that Locales also determine the "Root" Folder
+    # so we try guessing it.
+    # default is "Gmail" but for some locales (Germany and EN/GB)
+    # it's "Google Mail"
+    # We try looking up the "Spam" subfolder cause the actual rootfolder 
+    # cannot be selected
+    _config['folder'] = "Gmail"
+    try:
+        status, count = server.select("[%s]/Spam" % _config['folder'])
+        if status=="NO":
+            _config['folder'] = "Google Mail"
+    except:
+        pass
+
     # now find out how the TRASH is called
     # it's usually "Trash" but with a EN/GB Locale it seems to be "Bin"
     # we just try to select the /Bin Folder and if it doesn't exist
