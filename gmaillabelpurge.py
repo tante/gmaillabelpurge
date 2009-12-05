@@ -53,13 +53,6 @@ labels=LABEL4,LABEL5
     except:
         raise SystemExit("Please set a password in your config file")
 
-    # now we set the gmail folder
-    # German accounts call it [Google Mail], International ones [Gmail]
-    if("googlemail.com" in _config['username'].lower()):
-        _config['folder'] = "Google Mail"
-    else:
-        _config['folder'] = "Gmail"
-
     _config['sections']=[]
     for section in config.sections():
         sectconf = {}
