@@ -67,7 +67,7 @@ labels=LABEL4,LABEL5
             raise SystemExit("No maxage defined for section %s" % section)
         _config['sections'].append(sectconf)
     
-def purge(verbose=False,pretend=False):
+def purge(verbose=False,pretend=False,archive=False):
     """Purge the labels given in the config file."""
     
     readConf()
@@ -169,19 +169,34 @@ def purge(verbose=False,pretend=False):
                 #check whether we wanna delete the mail
                 if delta.days>section['maxage']:
                     if pretend:
-                        print("I would delete '%s' from '%s'" % (headers['subject'],headers['from'])) 
+                        if archive:
+                            print("I would archive '%s' from '%s'" % (headers['subject'],headers['from'])) 
+                            
+                        else:
+                            print("I would delete '%s' from '%s'" % (headers['subject'],headers['from'])) 
 
                     else:
-                        print("Deleting '%s' from '%s'" % (headers['subject'],headers['from'])) 
-                        try:
-                            #copy the mail to the trash
-                            server.uid("copy",message,"[%s]/%s" % (_config['folder'],_config['trashfolder']))
-                            #mark the original mail deleted
-                            typ, response = server.uid("store",message, '+FLAGS', r'(\Deleted)')
-                            #call expunge in order to really delete the messages marked
-                            server.expunge()
-                        except Exception, e:
-                            print("There was a problem deleting '%s' from '%s' (%s)" % (headers['subject'],headers['from'],repr(e)))        
+                        if archive:
+                            print("Archiving '%s' from '%s'" % (headers['subject'],headers['from'])) 
+                            try:
+                                #mark the original mail deleted
+                                typ, response = server.uid("store",message, '+FLAGS', r'(\Deleted)')
+                                #call expunge in order to really delete the messages marked
+                                server.expunge()
+                            except Exception, e:
+                                print("There was a problem deleting '%s' from '%s' (%s)" % (headers['subject'],headers['from'],repr(e)))        
+
+                        else:
+                            print("Deleting '%s' from '%s'" % (headers['subject'],headers['from'])) 
+                            try:
+                                #copy the mail to the trash
+                                server.uid("copy",message,"[%s]/%s" % (_config['folder'],_config['trashfolder']))
+                                #mark the original mail deleted
+                                typ, response = server.uid("store",message, '+FLAGS', r'(\Deleted)')
+                                #call expunge in order to really delete the messages marked
+                                server.expunge()
+                            except Exception, e:
+                                print("There was a problem deleting '%s' from '%s' (%s)" % (headers['subject'],headers['from'],repr(e)))        
                 
                 else:
                     if verbose:
@@ -203,7 +218,11 @@ if __name__=="__main__":
     parser.add_option("-p", "--pretend",
                   action="store_true", dest="pretend", default=False,
                   help="just do a dry run and don't actually delete or move messages")
+    parser.add_option("-a", "--archive",
+                  action="store_true", dest="archive", default=False,
+                  help="Instead of deleting archive messages.")
+
     (options,args) = parser.parse_args()
     
     # run purge()
-    purge(options.verbose,options.pretend)
+    purge(options.verbose,options.pretend,options.archive)
