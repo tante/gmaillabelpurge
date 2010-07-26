@@ -151,7 +151,8 @@ def purge(verbose=False,pretend=False,archive=False):
                 # save current \Seen state to set it back afterwards
                 status, data = server.uid("fetch",message, "FLAGS")
                 # seen=False means the email is unread
-                seen = "Seen" in data
+                flags = data[0].split(" ",4)[4].replace("(","").replace(")","")
+                seen = "Seen" in flags
                 if verbose:
                     if seen:
                         tmp = "read"
@@ -178,9 +179,16 @@ def purge(verbose=False,pretend=False,archive=False):
              
                 # now re-apply the read state
                 if seen:
-                    server.uid("store",message, '+FLAGS', r'(\Seen)')
+                    if verbose:
+                        print("Setting message %s to Read" % message)
+                    if not pretend:    
+                        server.uid("store",message, '+FLAGS', r'(\Seen)')
+                    
                 else:
-                    server.uid("store",message, '-FLAGS', r'(\Seen)')
+                    if verbose:
+                        print("Setting message %s to Unread" % message)
+                    if not pretend:
+                        server.uid("store",message, '-FLAGS', r'(\Seen)')
 
 
                 #check whether we wanna delete the mail
