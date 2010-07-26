@@ -148,6 +148,10 @@ def purge(verbose=False,pretend=False,archive=False):
             for message in messages:
                 if verbose:
                     print("Loading message %s" % message)
+                # save current \Seen state to set it back afterwards
+                status, data = server.uid("fetch",message, "FLAGS")
+                # seen=False means the email is unread
+                seen =  "Seen" in data
                 status, data = server.uid("fetch",message, "(UID BODY[HEADER.FIELDS (SUBJECT FROM DATE)])")
                 headers={}
                 for header in data[0][1].split("\n"):
@@ -166,6 +170,13 @@ def purge(verbose=False,pretend=False,archive=False):
                 maildate = datetime.datetime(*datetuple)
                 delta=now-maildate
              
+                # now re-apply the read state
+                if seen:
+                    server.uid("store",message, '+FLAGS', r'(\Seen)')
+                else:
+                    server.uid("store",message, '-FLAGS', r'(\Seen)')
+
+
                 #check whether we wanna delete the mail
                 if delta.days>section['maxage']:
                     if pretend:
@@ -200,7 +211,8 @@ def purge(verbose=False,pretend=False,archive=False):
                 
                 else:
                     if verbose:
-                        print("Not Deleting '%s' from '%s'" % (headers['subject'],headers['from'])) 
+                        print("Not Deleting '%s' from '%s'" % (headers['subject'],headers['from']))
+
         
     # close the connection to the server
     try:
