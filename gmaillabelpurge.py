@@ -151,7 +151,13 @@ def purge(verbose=False,pretend=False,archive=False):
                 # save current \Seen state to set it back afterwards
                 status, data = server.uid("fetch",message, "FLAGS")
                 # seen=False means the email is unread
-                seen =  "Seen" in data
+                seen = "Seen" in data
+                if verbose:
+                    if seen:
+                        tmp = "read"
+                    else:
+                        tmp = "unread"
+                    print ("Message %s is %s" % (message,tmp))
                 status, data = server.uid("fetch",message, "(UID BODY[HEADER.FIELDS (SUBJECT FROM DATE)])")
                 headers={}
                 for header in data[0][1].split("\n"):
