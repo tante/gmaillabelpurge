@@ -14,8 +14,8 @@ import string
 from ConfigParser import ConfigParser
 from optparse import OptionParser
 
-CONFIGFILE="~/.gmaillabelpurge"
-"""The filename and path of the config file, default is ~/.gmailpurge"""
+CONFIGFILE="~/.config/com.github.tante.gmaillabelpurge"
+"""The filename and path of the config file, default is ~/.config/com.github.tante.gmaillabelpurge"""
 
 _config=None
 """_config contains the configuration as parsed from CONFIGFILE"""
