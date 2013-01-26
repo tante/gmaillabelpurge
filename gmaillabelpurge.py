@@ -153,18 +153,7 @@ def purge(verbose=False,pretend=False,archive=False):
             for message in messages:
                 if verbose:
                     print("Loading message %s" % message)
-                # save current \Seen state to set it back afterwards
-                status, data = server.uid("fetch",message, "FLAGS")
-                # seen=False means the email is unread
-                flags = data[0].split(" ",4)[4].replace("(","").replace(")","")
-                seen = "Seen" in flags
-                if verbose:
-                    if seen:
-                        tmp = "read"
-                    else:
-                        tmp = "unread"
-                    print ("Message %s is %s" % (message,tmp))
-                status, data = server.uid("fetch",message, "(UID BODY[HEADER.FIELDS (SUBJECT FROM)])")
+                status, data = server.uid("fetch", message, "(UID BODY.PEEK[HEADER.FIELDS (SUBJECT FROM)])")
                 headers={}
                 for header in data[0][1].split("\n"):
                     try:
@@ -174,19 +163,6 @@ def purge(verbose=False,pretend=False,archive=False):
                         # we just don't care what went wrong here
                         pass
                 
-                # now re-apply the read state
-                if seen:
-                    if verbose:
-                        print("Setting message %s to Read" % message)
-                    if not pretend:    
-                        server.uid("store",message, '+FLAGS', r'(\Seen)')
-                    
-                else:
-                    if verbose:
-                        print("Setting message %s to Unread" % message)
-                    if not pretend:
-                        server.uid("store",message, '-FLAGS', r'(\Seen)')
-
                 if pretend:
                     if archive:
                         print("I would archive '%s' from '%s'" % (headers.get('subject'),headers.get('from')))
