@@ -107,13 +107,15 @@ def purge(verbose=False,pretend=False,archive=False):
             _config['trashfolder'] = "Bin"
     except:
         pass
-        
+
+    trash = "[%s]/%s" % (_config['folder'],_config['trashfolder'])
+
     # mark the current date so we can compare the mail ages
     today = datetime.date.today()
     if verbose:
         print("Current date: %s" % today.isoformat())
         print("Will use the Foldername [%s]" % _config['folder'])
-        print("The Trash is in [%s]/%s ." % (_config['folder'], _config['trashfolder']))
+        print("The Trash is in %s ." % trash)
 
     # iterate over the sections
     for section in _config['sections']:
@@ -179,7 +181,7 @@ def purge(verbose=False,pretend=False,archive=False):
                         else:
                             print("Deleting '%s' from '%s'" % (headers['subject'],headers['from']))
                             #copy the mail to the trash
-                            server.uid("copy", msguid, "[%s]/%s" % (_config['folder'],_config['trashfolder']))
+                            server.uid("copy", msguid, trash)
 
                         #mark the original mail deleted
                         typ, response = server.uid("store", msguid, '+FLAGS', r'(\Deleted)')
