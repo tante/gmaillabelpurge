@@ -140,29 +140,37 @@ def purge(verbose=False,pretend=False,archive=False):
                 print("The given label ('%s') doesn't seem to exist, there were at least problems with it. (Status: %s)" % (label,status))
                 # break out of this iteration cause the label doesn't exist
                 break
-            
-            # get the UIDs so we can properly delete more than one
-            messages=[]
-            for message in data[0].split():
-                status, data = server.fetch(message, "UID")
-                for msg in data:
-                    # we just want the real UID so we throw away the rest
-                    messages.append(msg[msg.index("UID")+4:-1])
-            
-            # now go through messages
-            for message in messages:
+
+            # don't do anything if we didn't find any old message at all...
+            if data[0] == "":
+                continue
+
+            msgsidx = ",".join(data[0].split())
+
+            status, data = server.fetch(msgsidx, "(UID BODY.PEEK[HEADER.FIELDS (SUBJECT FROM)])")
+
+            # data will have two hits each message, one with the
+            # headers and an empty one for the body.
+            for i in range(len(data)/2):
+                msg = data[i*2]
+                message = msg[0]
+
+                # get the UID out of the string in the format
+                # 1 (UID 13281 BODY[HEADER.FIELDS (SUBJECT FROM)] {97}
+                msguid = message[message.index("UID")+4:message.index(" BODY")]
+
                 if verbose:
-                    print("Loading message %s" % message)
-                status, data = server.uid("fetch", message, "(UID BODY.PEEK[HEADER.FIELDS (SUBJECT FROM)])")
+                    print("Loading message %s" % msguid)
+
                 headers={}
-                for header in data[0][1].split("\n"):
+                for header in msg[1].split("\n"):
                     try:
                         name,value = header.strip().split(":",1)
                         headers[name.strip().lower()] = value.strip()
                     except:
                         # we just don't care what went wrong here
                         pass
-                
+
                 if pretend:
                     if archive:
                         print("I would archive '%s' from '%s'" % (headers.get('subject'),headers.get('from')))
@@ -171,27 +179,21 @@ def purge(verbose=False,pretend=False,archive=False):
                         print("I would delete '%s' from '%s'" % (headers.get('subject'),headers.get('from')))
 
                 else:
-                    if archive:
-                        print("Archiving '%s' from '%s'" % (headers.get('subject'),headers.get('from')))
-                        try:
-                            #mark the original mail deleted
-                            typ, response = server.uid("store",message, '+FLAGS', r'(\Deleted)')
-                            #call expunge in order to really delete the messages marked
-                            server.expunge()
-                        except Exception as e:
-                            print("There was a problem deleting '%s' from '%s' (%s)" % (headers.get('subject'),headers.get('from'),repr(e)))
+                    try:
+                        if archive:
+                            print("Archiving '%s' from '%s'" % (headers.get('subject'),headers.get('from')))
 
-                    else:
-                        print("Deleting '%s' from '%s'" % (headers.get('subject'),headers.get('from')))
-                        try:
+                        else:
+                            print("Deleting '%s' from '%s'" % (headers.get('subject'),headers.get('from')))
                             #copy the mail to the trash
-                            server.uid("copy",message,"[%s]/%s" % (_config['folder'],_config['trashfolder']))
-                            #mark the original mail deleted
-                            typ, response = server.uid("store",message, '+FLAGS', r'(\Deleted)')
-                            #call expunge in order to really delete the messages marked
-                            server.expunge()
-                        except Exception as e:
-                            print("There was a problem deleting '%s' from '%s' (%s)" % (headers.get('subject'),headers.get('from'),repr(e)))
+                            server.uid("copy", msguid, "[%s]/%s" % (_config['folder'],_config['trashfolder']))
+
+                        #mark the original mail deleted
+                        typ, response = server.uid("store", msguid, '+FLAGS', r'(\Deleted)')
+                        #call expunge in order to really delete the messages marked
+                        server.expunge()
+                    except Exception as e:
+                        print("There was a problem deleting '%s' from '%s' (%s)" % (headers.get('subject'),headers.get('from'),repr(e)))
 
 
     # close the connection to the server
