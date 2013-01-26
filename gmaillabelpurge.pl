@@ -85,27 +85,11 @@ my $server = Mail::IMAPClient->new(
     Ranges => 1,
     ) or die "client: $@";
 
-my $trashfolder;
-
-# Get the list of folders — unfortunately we have to map them with a
-# regex to get the flags needed for the Special-Use Extension
-# (RFC6154) which GMail uses to signal which folder is the Trash
-# folder.
-foreach my $listing ($server->list) {
-    next unless $listing =~ /^\* LIST \(([A-Za-z \\]+)\) "\/" "(.+)"\s+$/;
-
-    my $folder = $2;
-    my @flags = split(/\s+/, $1);
-
-    if ( grep($_ eq '\Trash', @flags) == 1 ) {
-	$trashfolder = $folder;
-	last;
-    }
-}
-
-if ( !defined($trashfolder) ) {
+# While the XLIST method is deprecated at this point (replaced by
+# RFC6154's Special-Use Extension), Mail::IMAPClient up to 3.31 does
+# not support it, while GMail still support XLIST for compatibility.
+my $trashfolder = $server->xlist_folders->{Trash} or
     die "Unable to identify trash folder";
-}
 
 if ( $verbose ) {
     print
