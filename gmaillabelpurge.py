@@ -208,7 +208,7 @@ def purge(verbose=False,pretend=False,archive=False):
                                 typ, response = server.uid("store",message, '+FLAGS', r'(\Deleted)')
                                 #call expunge in order to really delete the messages marked
                                 server.expunge()
-                            except Exception, e:
+                            except Exception as e:
                                 print("There was a problem deleting '%s' from '%s' (%s)" % (headers.get('subject'),headers.get('from'),repr(e)))        
 
                         else:
@@ -220,7 +220,7 @@ def purge(verbose=False,pretend=False,archive=False):
                                 typ, response = server.uid("store",message, '+FLAGS', r'(\Deleted)')
                                 #call expunge in order to really delete the messages marked
                                 server.expunge()
-                            except Exception, e:
+                            except Exception as e:
                                 print("There was a problem deleting '%s' from '%s' (%s)" % (headers.get('subject'),headers.get('from'),repr(e)))        
                 
                 else:
