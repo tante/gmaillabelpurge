@@ -5,8 +5,8 @@ gmaillabelpurge allows you to delete all messages from given gmail
 labels when they reach a certain age.
 
 it uses GMail's IMAP interface, which means you have to enable IMAP on
-your account, and speaks (Google's IMAP
-extensions)[https://developers.google.com/google-apps/gmail/imap_extensions].
+your account, and speaks [Google's IMAP
+extensions](https://developers.google.com/google-apps/gmail/imap_extensions).
 
 At the time of writing, we have two scripts: one written in Python 2,
 that only requires its standard library, and a faster, version in Perl
