@@ -117,7 +117,14 @@ foreach my $section (@sections) {
 	    "Searching for messages older than ", $oldest, "\n";
     }
 
-    foreach my $label (@labels) {
+    # only expand folders when there's a star matching at the end of
+    # the label name.
+    my @folders = map($_ =~ /^(.*)\*$/ ? $server->folders($1) : $_, @labels)
+	or die "$@";
+
+    foreach my $label (@folders) {
+	next unless $server->selectable($label);
+
 	if ( $verbose ) {
 	    print
 		"Checking label '", $label, "'\n";
