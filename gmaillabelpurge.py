@@ -162,29 +162,22 @@ def purge(verbose=False,pretend=False,archive=False):
                 if verbose:
                     print("Loading message %s" % msguid)
 
-                headers={}
-                for header in msg[1].split("\n"):
-                    try:
-                        name,value = header.strip().split(":",1)
-                        headers[name.strip().lower()] = value.strip()
-                    except:
-                        # we just don't care what went wrong here
-                        pass
+                headers = email.message_from_string(msg[1])
 
                 if pretend:
                     if archive:
-                        print("I would archive '%s' from '%s'" % (headers.get('subject'),headers.get('from')))
+                        print("I would archive '%s' from '%s'" % (headers['subject'],headers['from']))
 
                     else:
-                        print("I would delete '%s' from '%s'" % (headers.get('subject'),headers.get('from')))
+                        print("I would delete '%s' from '%s'" % (headers['subject'],headers['from']))
 
                 else:
                     try:
                         if archive:
-                            print("Archiving '%s' from '%s'" % (headers.get('subject'),headers.get('from')))
+                            print("Archiving '%s' from '%s'" % (headers['subject'],headers['from']))
 
                         else:
-                            print("Deleting '%s' from '%s'" % (headers.get('subject'),headers.get('from')))
+                            print("Deleting '%s' from '%s'" % (headers['subject'],headers['from']))
                             #copy the mail to the trash
                             server.uid("copy", msguid, "[%s]/%s" % (_config['folder'],_config['trashfolder']))
 
@@ -193,7 +186,7 @@ def purge(verbose=False,pretend=False,archive=False):
                         #call expunge in order to really delete the messages marked
                         server.expunge()
                     except Exception as e:
-                        print("There was a problem deleting '%s' from '%s' (%s)" % (headers.get('subject'),headers.get('from'),repr(e)))
+                        print("There was a problem deleting '%s' from '%s' (%s)" % (headers['subject'],headers['from'],repr(e)))
 
 
     # close the connection to the server
