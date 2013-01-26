@@ -11,7 +11,10 @@ import os.path
 import email.utils
 import datetime
 import string
-from ConfigParser import ConfigParser
+try:
+	from configparser import ConfigParser
+except ImportError:
+	from ConfigParser import ConfigParser
 from optparse import OptionParser
 
 CONFIGFILE="~/.config/com.github.tante.gmaillabelpurge"
