@@ -75,6 +75,14 @@ def purge(verbose=False,pretend=False,archive=False):
     
     readConf()
     global _config
+
+    if archive:
+        action = "archiving"
+    else:
+        action = "deleting"
+
+    if pretend:
+        action = "I would be " + action
     
     server=imaplib.IMAP4_SSL("imap.gmail.com", 993)
     try:
@@ -166,20 +174,11 @@ def purge(verbose=False,pretend=False,archive=False):
 
                 headers = email.message_from_string(msg[1])
 
-                if pretend:
-                    if archive:
-                        print("I would archive '%s' from '%s'" % (headers['subject'],headers['from']))
+                print("%s '%s' from '%s'" % (action, headers['subject'], headers['from']))
 
-                    else:
-                        print("I would delete '%s' from '%s'" % (headers['subject'],headers['from']))
-
-                else:
+                if not pretend:
                     try:
-                        if archive:
-                            print("Archiving '%s' from '%s'" % (headers['subject'],headers['from']))
-
-                        else:
-                            print("Deleting '%s' from '%s'" % (headers['subject'],headers['from']))
+                        if not archive:
                             #copy the mail to the trash
                             server.uid("copy", msguid, trash)
 
