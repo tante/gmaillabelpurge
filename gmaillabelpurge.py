@@ -17,6 +17,10 @@ except ImportError:
     from ConfigParser import ConfigParser
 from optparse import OptionParser
 
+# Python2's email lacks message_from_bytes(), but the data returned from
+# imaplib's fetch() is actually a Python2 str
+message_from_bytes = getattr(email, "message_from_bytes", email.message_from_string)
+
 CONFIGFILE="~/.config/com.github.tante.gmaillabelpurge"
 """The filename and path of the config file, default is ~/.config/com.github.tante.gmaillabelpurge"""
 
@@ -151,27 +155,27 @@ def purge(verbose=False,pretend=False,archive=False):
                 break
 
             # don't do anything if we didn't find any old message at all...
-            if data[0] == "":
+            if not data[0]:
                 continue
 
-            msgsidx = ",".join(data[0].split())
+            msgsidx = b",".join(data[0].split())
 
             status, data = server.fetch(msgsidx, "(UID BODY.PEEK[HEADER.FIELDS (SUBJECT FROM)])")
 
             # data will have two hits each message, one with the
             # headers and an empty one for the body.
-            for i in range(len(data)/2):
+            for i in range(len(data)//2):
                 msg = data[i*2]
                 message = msg[0]
 
                 # get the UID out of the string in the format
                 # 1 (UID 13281 BODY[HEADER.FIELDS (SUBJECT FROM)] {97}
-                msguid = message[message.index("UID")+4:message.index(" BODY")]
+                msguid = message[message.index(b"UID")+4:message.index(b" BODY")]
 
                 if verbose:
                     print("Loading message %s" % msguid)
 
-                headers = email.message_from_string(msg[1])
+                headers = message_from_bytes(msg[1])
 
                 print("%s '%s' from '%s'" % (action, headers['subject'], headers['from']))
 
