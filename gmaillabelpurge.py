@@ -12,9 +12,9 @@ import email.utils
 import datetime
 import string
 try:
-	from configparser import ConfigParser
+    from configparser import ConfigParser
 except ImportError:
-	from ConfigParser import ConfigParser
+    from ConfigParser import ConfigParser
 from optparse import OptionParser
 
 CONFIGFILE="~/.config/com.github.tante.gmaillabelpurge"
@@ -44,7 +44,6 @@ labels=LABEL1,LABEL2
 [set2]
 maxage=15
 labels=LABEL4,LABEL5
-        
 """ % os.path.expanduser(CONFIGFILE))
 
     try:
@@ -52,7 +51,7 @@ labels=LABEL4,LABEL5
     except:
         raise SystemExit("Please set a username in your config file")
     try:
-        _config['password'] = config.get("DEFAULT","password") 
+        _config['password'] = config.get("DEFAULT","password")
     except:
         raise SystemExit("Please set a password in your config file")
 
@@ -69,10 +68,10 @@ labels=LABEL4,LABEL5
         except:
             raise SystemExit("No maxage defined for section %s" % section)
         _config['sections'].append(sectconf)
-    
+
 def purge(verbose=False,pretend=False,archive=False):
     """Purge the labels given in the config file."""
-    
+
     readConf()
     global _config
 
@@ -83,7 +82,7 @@ def purge(verbose=False,pretend=False,archive=False):
 
     if pretend:
         action = "I would be " + action
-    
+
     server=imaplib.IMAP4_SSL("imap.gmail.com", 993)
     try:
         server.login(_config['username'],_config['password'])
@@ -94,7 +93,7 @@ def purge(verbose=False,pretend=False,archive=False):
     # so we try guessing it.
     # default is "Gmail" but for some locales (Germany and EN/GB)
     # it's "Google Mail"
-    # We try looking up the "Spam" subfolder cause the actual rootfolder 
+    # We try looking up the "Spam" subfolder cause the actual rootfolder
     # cannot be selected
     _config['folder'] = "Gmail"
     try:
@@ -141,7 +140,7 @@ def purge(verbose=False,pretend=False,archive=False):
                 status, count = server.select(label)
             except:
                 raise SystemExit("The given label ('%s') doesn't seem to exist." % label)
-            
+
             # get all messages
             try:
                 status, data = server.search(None, '(SENTBEFORE {date})'.format(date=oldest))
@@ -176,18 +175,18 @@ def purge(verbose=False,pretend=False,archive=False):
 
                 print("%s '%s' from '%s'" % (action, headers['subject'], headers['from']))
 
-	if not pretend:
-	    try:
-		if archive:
-		    #mark the original mail deleted
-		    typ, response = server.store(msgsidx, '+FLAGS', r'(\Deleted)')
-		    #call expunge in order to really delete the messages marked
-		    server.expunge()
-		else:
-		    #copy the mail to the trash
-		    server.copy(msgsidx, trash)
-	    except Exception as e:
-		print("There was a problem deleting messages from label '%s' (%s)" % (label,repr(e)))
+        if not pretend:
+            try:
+                if archive:
+                    #mark the original mail deleted
+                    typ, response = server.store(msgsidx, '+FLAGS', r'(\Deleted)')
+                    #call expunge in order to really delete the messages marked
+                    server.expunge()
+                else:
+                    #copy the mail to the trash
+                    server.copy(msgsidx, trash)
+            except Exception as e:
+                print("There was a problem deleting messages from label '%s' (%s)" % (label,repr(e)))
 
 
     # close the connection to the server
@@ -211,6 +210,6 @@ if __name__=="__main__":
                   help="Instead of deleting archive messages.")
 
     (options,args) = parser.parse_args()
-    
+
     # run purge()
     purge(options.verbose,options.pretend,options.archive)
