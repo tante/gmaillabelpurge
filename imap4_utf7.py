@@ -48,13 +48,14 @@ def encoder(s, errors=None):
 
     @param errors: Policy for handling encoding errors.  Currently ignored.
 
-    @return: C{tuple} of a C{str} giving the encoded bytes and an C{int}
+    @return: C{tuple} of a C{bytes} giving the encoded bytes and an C{int}
         giving the number of code units consumed from the input.
     """
     r = bytearray()
     _in = []
+    valid_chars = set(map(chr, range(0x20,0x7f))) - {"&"}
     for c in s:
-        if ord(c) in (set(range(0x20, 0x26)) | set(range(0x27, 0x7f))):
+        if c in valid_chars:
             if _in:
                 r += b'&' + modified_base64(''.join(_in)) + b'-'
                 del _in[:]
