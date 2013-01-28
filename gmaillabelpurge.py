@@ -28,9 +28,8 @@ def readConf():
     when the file isn't valid for some reason."""
     _config={}
     config=ConfigParser()
-    try:
-        data = config.read(os.path.expanduser(CONFIGFILE))
-    except:
+    parsed_files = config.read(os.path.expanduser(CONFIGFILE))
+    if not parsed_files:
         raise SystemExit("""Please set up the configuration in %s
 Example:
 
