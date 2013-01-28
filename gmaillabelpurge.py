@@ -10,11 +10,14 @@ import imaplib
 import os
 import email
 import datetime
+import sys
 try:
     from configparser import ConfigParser
 except ImportError:
     from ConfigParser import ConfigParser
 from optparse import OptionParser
+
+import imap4_utf7
 
 # Python2's email lacks message_from_bytes(), but the data returned from
 # imaplib's fetch() is actually a Python2 str
@@ -60,6 +63,8 @@ labels=LABEL4,LABEL5
         sectconf['name']   = section
         try:
             sectconf['labels'] = [label.strip() for label in config.get(section, "labels").split(",")]
+            if sys.version_info[0] == 2:
+                sectconf['labels'] = [label.decode("utf-8") for label in sectconf['labels']]
         except:
             raise SystemExit("No labels defined for section %s" % section)
         try:
@@ -135,9 +140,9 @@ def purge(verbose=False,pretend=False,archive=False):
         for label in section['labels']:
             if verbose:
                 print("Checking label '%s'\n" % label)
-            try:
-                status, count = server.select(label)
-            except:
+
+            status, count = server.select(b'"' + label.encode("imap4-utf-7") + b'"')
+            if status == "NO":
                 raise SystemExit("The given label ('%s') doesn't seem to exist." % label)
 
             # get all messages
