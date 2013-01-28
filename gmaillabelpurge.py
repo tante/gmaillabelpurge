@@ -8,9 +8,8 @@
 
 import imaplib
 import os.path
-import email.utils
+import email
 import datetime
-import string
 try:
     from configparser import ConfigParser
 except ImportError:
@@ -24,13 +23,9 @@ message_from_bytes = getattr(email, "message_from_bytes", email.message_from_str
 CONFIGFILE="~/.config/com.github.tante.gmaillabelpurge"
 """The filename and path of the config file, default is ~/.config/com.github.tante.gmaillabelpurge"""
 
-_config=None
-"""_config contains the configuration as parsed from CONFIGFILE"""
-
 def readConf():
     """Read the configuration file and die with a helpful error message
     when the file isn't valid for some reason."""
-    global _config
     _config={}
     config=ConfigParser()
     try:
@@ -64,7 +59,7 @@ labels=LABEL4,LABEL5
         sectconf = {}
         sectconf['name']   = section
         try:
-            sectconf['labels'] = map(str.strip,config.get(section,"labels").split(","))
+            sectconf['labels'] = [label.strip() for label in config.get(section, "labels").split(",")]
         except:
             raise SystemExit("No labels defined for section %s" % section)
         try:
@@ -73,11 +68,12 @@ labels=LABEL4,LABEL5
             raise SystemExit("No maxage defined for section %s" % section)
         _config['sections'].append(sectconf)
 
+    return _config
+
 def purge(verbose=False,pretend=False,archive=False):
     """Purge the labels given in the config file."""
 
-    readConf()
-    global _config
+    _config = readConf()
 
     if archive:
         action = "archiving"
