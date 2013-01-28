@@ -7,7 +7,7 @@
 # Licensed under GPL-3
 
 import imaplib
-import os.path
+import os
 import email
 import datetime
 try:
@@ -20,7 +20,8 @@ from optparse import OptionParser
 # imaplib's fetch() is actually a Python2 str
 message_from_bytes = getattr(email, "message_from_bytes", email.message_from_string)
 
-CONFIGFILE="~/.config/com.github.tante.gmaillabelpurge"
+CONFIGFILE = os.path.join(os.environ.get("XDG_CONFIG_HOME", "~/.config"),
+                          "com.github.tante.gmaillabelpurge")
 """The filename and path of the config file, default is ~/.config/com.github.tante.gmaillabelpurge"""
 
 def readConf():
