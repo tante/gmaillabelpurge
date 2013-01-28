@@ -138,8 +138,7 @@ def purge(verbose=False,pretend=False,archive=False):
         # go through the labels
         for label in section['labels']:
             if verbose:
-                print("Checking label '%s'" % label)
-                print
+                print("Checking label '%s'\n" % label)
             try:
                 status, count = server.select(label)
             except:
