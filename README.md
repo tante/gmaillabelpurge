@@ -8,8 +8,8 @@ it uses GMail's IMAP interface, which means you have to enable IMAP on
 your account, and speaks [Google's IMAP
 extensions](https://developers.google.com/google-apps/gmail/imap_extensions).
 
-At the time of writing, we have two scripts: one written in Python 2,
-that only requires its standard library, and a faster, version in Perl
+At the time of writing, we have two scripts: one written in Python,
+that only requires its standard library, and a slightly faster, version in Perl
 which requires a few dependencies:
 
  - Config::IniFiles;
@@ -17,7 +17,7 @@ which requires a few dependencies:
  - IO::Socket::SSL;
  - DateTime.
 
-The Python version is not compatible with Python 3 at the moment.
+The Python version is compatible with both Python2 and Python3.
 
 How to use
 ----------
@@ -52,8 +52,7 @@ purged.
 
 To run the scripts, you can either call them directly, if executable,
 or as `python gmaillabelpurge.py` and `perl
-gmaillabelpurge.pl`. Please note that the Python script will not work
-correctly if executed through a Python 3.x interpreter.
+gmaillabelpurge.pl`.
 
 Both scripts respond to the `-h` option to get help on the parameters,
 and use `-v` or `--verbose` for printing more runtime details, and
