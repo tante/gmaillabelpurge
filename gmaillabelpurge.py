@@ -158,25 +158,25 @@ def purge(verbose=False,pretend=False,archive=False):
                 continue
 
             msgsidx = b",".join(data[0].split())
+            if verbose:
+                # get the fetched headers for all the messages, but
+                # only if we're going to print them out.
+                status, data = server.fetch(msgsidx, "(UID BODY.PEEK[HEADER.FIELDS (SUBJECT FROM)])")
 
-            status, data = server.fetch(msgsidx, "(UID BODY.PEEK[HEADER.FIELDS (SUBJECT FROM)])")
+                # data will have two hits each message, one with the
+                # headers and an empty one for the body.
+                for msg in data[::2]:
+                    message = msg[0]
 
-            # data will have two hits each message, one with the
-            # headers and an empty one for the body.
-            for i in range(len(data)//2):
-                msg = data[i*2]
-                message = msg[0]
+                    # get the UID out of the string in the format
+                    # 1 (UID 13281 BODY[HEADER.FIELDS (SUBJECT FROM)] {97}
+                    msguid = message[message.index(b"UID")+4:message.index(b" BODY")]
 
-                # get the UID out of the string in the format
-                # 1 (UID 13281 BODY[HEADER.FIELDS (SUBJECT FROM)] {97}
-                msguid = message[message.index(b"UID")+4:message.index(b" BODY")]
-
-                if verbose:
                     print("Loading message %s" % msguid)
 
-                headers = message_from_bytes(msg[1])
+                    headers = message_from_bytes(msg[1])
 
-                print("%s '%s' from '%s'" % (action, headers['subject'], headers['from']))
+                    print("%s '%s' from '%s'" % (action, headers['subject'], headers['from']))
 
         if not pretend:
             try:
