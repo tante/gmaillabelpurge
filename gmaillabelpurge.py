@@ -173,18 +173,18 @@ def purge(verbose=False,pretend=False,archive=False):
 
                     print("%s '%s' from '%s'" % (action, headers['subject'], headers['from']))
 
-        if not pretend:
-            try:
-                if archive:
-                    #mark the original mail deleted
-                    typ, response = server.store(msgsidx, '+FLAGS', r'(\Deleted)')
-                    #call expunge in order to really delete the messages marked
-                    server.expunge()
-                else:
-                    #copy the mail to the trash
-                    server.copy(msgsidx, trash)
-            except Exception as e:
-                print("There was a problem deleting messages from label '%s' (%s)" % (label,repr(e)))
+            if not pretend:
+                try:
+                    if archive:
+                        #mark the original mail deleted
+                        typ, response = server.store(msgsidx, '+FLAGS', r'(\Deleted)')
+                        #call expunge in order to really delete the messages marked
+                        server.expunge()
+                    else:
+                        #copy the mail to the trash
+                        server.copy(msgsidx, trash)
+                except Exception as e:
+                    print("There was a problem deleting messages from label '%s' (%s)" % (label,repr(e)))
 
 
     # close the connection to the server
