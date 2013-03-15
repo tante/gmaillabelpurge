@@ -7,28 +7,33 @@
 # Licensed under GPL-3
 
 import imaplib
-import os.path
-import email.utils
+import os
+import email
 import datetime
-import string
-from ConfigParser import ConfigParser
+import sys
+try:
+    from configparser import ConfigParser
+except ImportError:
+    from ConfigParser import ConfigParser
 from optparse import OptionParser
 
-CONFIGFILE="~/.config/com.github.tante.gmaillabelpurge"
-"""The filename and path of the config file, default is ~/.config/com.github.tante.gmaillabelpurge"""
+import imap4_utf7
 
-_config=None
-"""_config contains the configuration as parsed from CONFIGFILE"""
+# Python2's email lacks message_from_bytes(), but the data returned from
+# imaplib's fetch() is actually a Python2 str
+message_from_bytes = getattr(email, "message_from_bytes", email.message_from_string)
+
+CONFIGFILE = os.path.join(os.environ.get("XDG_CONFIG_HOME", "~/.config"),
+                          "com.github.tante.gmaillabelpurge")
+"""The filename and path of the config file, default is ~/.config/com.github.tante.gmaillabelpurge"""
 
 def readConf():
     """Read the configuration file and die with a helpful error message
     when the file isn't valid for some reason."""
-    global _config
     _config={}
     config=ConfigParser()
-    try:
-        data = config.read(os.path.expanduser(CONFIGFILE))
-    except:
+    parsed_files = config.read(os.path.expanduser(CONFIGFILE))
+    if not parsed_files:
         raise SystemExit("""Please set up the configuration in %s
 Example:
 
@@ -41,7 +46,6 @@ labels=LABEL1,LABEL2
 [set2]
 maxage=15
 labels=LABEL4,LABEL5
-        
 """ % os.path.expanduser(CONFIGFILE))
 
     try:
@@ -49,7 +53,7 @@ labels=LABEL4,LABEL5
     except:
         raise SystemExit("Please set a username in your config file")
     try:
-        _config['password'] = config.get("DEFAULT","password") 
+        _config['password'] = config.get("DEFAULT","password")
     except:
         raise SystemExit("Please set a password in your config file")
 
@@ -58,7 +62,9 @@ labels=LABEL4,LABEL5
         sectconf = {}
         sectconf['name']   = section
         try:
-            sectconf['labels'] = map(string.strip,config.get(section,"labels").split(","))
+            sectconf['labels'] = [label.strip() for label in config.get(section, "labels").split(",")]
+            if sys.version_info[0] == 2:
+                sectconf['labels'] = [label.decode("utf-8") for label in sectconf['labels']]
         except:
             raise SystemExit("No labels defined for section %s" % section)
         try:
@@ -66,13 +72,22 @@ labels=LABEL4,LABEL5
         except:
             raise SystemExit("No maxage defined for section %s" % section)
         _config['sections'].append(sectconf)
-    
+
+    return _config
+
 def purge(verbose=False,pretend=False,archive=False):
     """Purge the labels given in the config file."""
-    
-    readConf()
-    global _config
-    
+
+    _config = readConf()
+
+    if archive:
+        action = "archiving"
+    else:
+        action = "deleting"
+
+    if pretend:
+        action = "I would be " + action
+
     server=imaplib.IMAP4_SSL("imap.gmail.com", 993)
     try:
         server.login(_config['username'],_config['password'])
@@ -83,7 +98,7 @@ def purge(verbose=False,pretend=False,archive=False):
     # so we try guessing it.
     # default is "Gmail" but for some locales (Germany and EN/GB)
     # it's "Google Mail"
-    # We try looking up the "Spam" subfolder cause the actual rootfolder 
+    # We try looking up the "Spam" subfolder cause the actual rootfolder
     # cannot be selected
     _config['folder'] = "Gmail"
     try:
@@ -104,130 +119,80 @@ def purge(verbose=False,pretend=False,archive=False):
             _config['trashfolder'] = "Bin"
     except:
         pass
-        
+
+    trash = "[%s]/%s" % (_config['folder'],_config['trashfolder'])
+
     # mark the current date so we can compare the mail ages
-    now = datetime.datetime.now()
+    today = datetime.date.today()
     if verbose:
-        print("Current time: %s" % now.isoformat())
+        print("Current date: %s" % today.isoformat())
         print("Will use the Foldername [%s]" % _config['folder'])
-        print("The Trash is in [%s]/%s ." % (_config['folder'], _config['trashfolder']))
+        print("The Trash is in %s ." % trash)
 
     # iterate over the sections
     for section in _config['sections']:
+        oldest = (today - datetime.timedelta(section['maxage'] +1)).strftime("%d-%b-%Y")
         if verbose:
             print("Doing section [%s]" % section)
             print("Maxage for this section: %s days." % section['maxage'])
+            print("Searching for messages older than %s" % oldest)
         # go through the labels
         for label in section['labels']:
             if verbose:
-                print("Checking label '%s'" % label)
-                print
-            try:
-                status, count = server.select(label)
-            except:
+                print("Checking label '%s'\n" % label)
+
+            status, count = server.select(b'"' + label.encode("imap4-utf-7") + b'"')
+            if status == "NO":
                 raise SystemExit("The given label ('%s') doesn't seem to exist." % label)
-            
+
             # get all messages
             try:
-                status, data = server.search(None, 'ALL')
+                status, data = server.search(None, '(SENTBEFORE {date})'.format(date=oldest))
             # might be too generic but gmail seems to allow select-ing unexisting labels
             except:
                 print("The given label ('%s') doesn't seem to exist, there were at least problems with it. (Status: %s)" % (label,status))
                 # break out of this iteration cause the label doesn't exist
                 break
-            
-            # get the UIDs so we can properly delete more than one
-            messages=[]
-            for message in data[0].split():
-                status, data = server.fetch(message, "UID")
-                for msg in data:
-                    # we just want the real UID so we throw away the rest
-                    messages.append(msg[msg.index("UID")+4:-1])
-            
-            # now go through messages
-            for message in messages:
-                if verbose:
-                    print("Loading message %s" % message)
-                # save current \Seen state to set it back afterwards
-                status, data = server.uid("fetch",message, "FLAGS")
-                # seen=False means the email is unread
-                flags = data[0].split(" ",4)[4].replace("(","").replace(")","")
-                seen = "Seen" in flags
-                if verbose:
-                    if seen:
-                        tmp = "read"
+
+            # don't do anything if we didn't find any old message at all...
+            if not data[0]:
+                continue
+
+            msgsidx = b",".join(data[0].split())
+            if verbose:
+                # get the fetched headers for all the messages, but
+                # only if we're going to print them out.
+                status, data = server.fetch(msgsidx, "(UID BODY.PEEK[HEADER.FIELDS (SUBJECT FROM)])")
+
+                # data will have two hits each message, one with the
+                # headers and an empty one for the body.
+                for msg in data[::2]:
+                    message = msg[0]
+
+                    # get the UID out of the string in the format
+                    # 1 (UID 13281 BODY[HEADER.FIELDS (SUBJECT FROM)] {97}
+                    msguid = message[message.index(b"UID")+4:message.index(b" BODY")]
+
+                    print("Loading message %s" % msguid)
+
+                    headers = message_from_bytes(msg[1])
+
+                    print("%s '%s' from '%s'" % (action, headers['subject'], headers['from']))
+
+            if not pretend:
+                try:
+                    if archive:
+                        #mark the original mail deleted
+                        typ, response = server.store(msgsidx, '+FLAGS', r'(\Deleted)')
+                        #call expunge in order to really delete the messages marked
+                        server.expunge()
                     else:
-                        tmp = "unread"
-                    print ("Message %s is %s" % (message,tmp))
-                status, data = server.uid("fetch",message, "(UID BODY[HEADER.FIELDS (SUBJECT FROM DATE)])")
-                headers={}
-                for header in data[0][1].split("\n"):
-                    try:
-                        name,value = header.strip().split(":",1)
-                        headers[name.strip().lower()] = value.strip()
-                    except:
-                        # we just don't care what went wrong here
-                        pass
-            
-                datetuple = list(email.utils.parsedate(headers['date']))
-                # delete timezoneoffsets, might have to deal with that later
-                del datetuple[7]
-                del datetuple[7]
-                
-                maildate = datetime.datetime(*datetuple)
-                delta=now-maildate
-             
-                # now re-apply the read state
-                if seen:
-                    if verbose:
-                        print("Setting message %s to Read" % message)
-                    if not pretend:    
-                        server.uid("store",message, '+FLAGS', r'(\Seen)')
-                    
-                else:
-                    if verbose:
-                        print("Setting message %s to Unread" % message)
-                    if not pretend:
-                        server.uid("store",message, '-FLAGS', r'(\Seen)')
+                        #copy the mail to the trash
+                        server.copy(msgsidx, trash)
+                except Exception as e:
+                    print("There was a problem deleting messages from label '%s' (%s)" % (label,repr(e)))
 
 
-                #check whether we wanna delete the mail
-                if delta.days>section['maxage']:
-                    if pretend:
-                        if archive:
-                            print("I would archive '%s' from '%s'" % (headers.get('subject'),headers.get('from'))) 
-                            
-                        else:
-                            print("I would delete '%s' from '%s'" % (headers.get('subject'),headers.get('from'))) 
-
-                    else:
-                        if archive:
-                            print("Archiving '%s' from '%s'" % (headers.get('subject'),headers.get('from'))) 
-                            try:
-                                #mark the original mail deleted
-                                typ, response = server.uid("store",message, '+FLAGS', r'(\Deleted)')
-                                #call expunge in order to really delete the messages marked
-                                server.expunge()
-                            except Exception as e:
-                                print("There was a problem deleting '%s' from '%s' (%s)" % (headers.get('subject'),headers.get('from'),repr(e)))        
-
-                        else:
-                            print("Deleting '%s' from '%s'" % (headers.get('subject'),headers.get('from'))) 
-                            try:
-                                #copy the mail to the trash
-                                server.uid("copy",message,"[%s]/%s" % (_config['folder'],_config['trashfolder']))
-                                #mark the original mail deleted
-                                typ, response = server.uid("store",message, '+FLAGS', r'(\Deleted)')
-                                #call expunge in order to really delete the messages marked
-                                server.expunge()
-                            except Exception as e:
-                                print("There was a problem deleting '%s' from '%s' (%s)" % (headers.get('subject'),headers.get('from'),repr(e)))        
-                
-                else:
-                    if verbose:
-                        print("Not Deleting '%s' from '%s'" % (headers.get('subject'),headers.get('from')))
-
-        
     # close the connection to the server
     try:
         server.close()
@@ -249,6 +214,6 @@ if __name__=="__main__":
                   help="Instead of deleting archive messages.")
 
     (options,args) = parser.parse_args()
-    
+
     # run purge()
     purge(options.verbose,options.pretend,options.archive)
